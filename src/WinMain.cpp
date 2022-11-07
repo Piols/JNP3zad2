@@ -2,16 +2,22 @@
 #include "D2DApp.h"
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
+	static FLOAT arg = 0.0f;
 	switch (Msg) {
 	case WM_CREATE:
+		SetTimer(hwnd, 501, 10, nullptr);
 		InitDirect2D(hwnd);
 		return 0;
 	case WM_DESTROY:
 		DestroyDirect2D();
 		PostQuitMessage(0);
 		return 0;
+	case WM_TIMER:
+		arg += 0.02f;
+		InvalidateRect(hwnd, nullptr, true);
+		return 0;
 	case WM_PAINT:
-		OnPaint(hwnd);
+		OnPaint(hwnd, arg, lParam);
 		ValidateRect(hwnd, nullptr);
 		return 0;
 	case WM_SIZE:
@@ -45,7 +51,7 @@ INT WINAPI wWinMain(_In_ [[maybe_unused]] HINSTANCE instance,
 	HWND hwnd = CreateWindowEx(
 		0, // Optional window styles.
 		wcex.lpszClassName, // Window class
-		TEXT("Window Template"), // Window text
+		TEXT("Fat Mouse"), // Window text
 		WS_OVERLAPPEDWINDOW, // Window style
 
 		// Size and position

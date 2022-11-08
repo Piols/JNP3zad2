@@ -1,5 +1,6 @@
 #include "WinMain.h"
 #include "D2DApp.h"
+#include "windowsx.h"
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
 	static FLOAT arg = 0.0f;
@@ -17,11 +18,15 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
 		InvalidateRect(hwnd, nullptr, true);
 		return 0;
 	case WM_PAINT:
-		OnPaint(hwnd, arg, lParam);
+		// Jest zadowolony tylko wtedy gdy myszka jest klikniêta i jego okno jest aktywne.
+		OnPaint(hwnd, arg, GetAsyncKeyState(VK_LBUTTON) * (GetActiveWindow() == hwnd));
 		ValidateRect(hwnd, nullptr);
 		return 0;
 	case WM_SIZE:
 		DestroyRenderTarget();
+		return 0;
+	case WM_MOUSEMOVE:
+		OnMouseMove(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
 		return 0;
 	}
 	return DefWindowProc(hwnd, Msg, wParam, lParam);

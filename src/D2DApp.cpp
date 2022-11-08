@@ -62,6 +62,15 @@ namespace {
 	ID2D1PathGeometry* path_1 = nullptr;
 	ID2D1GeometrySink* path_sink_1 = nullptr;
 
+	ID2D1PathGeometry* path_happy = nullptr;
+	ID2D1GeometrySink* path_sink_happy = nullptr;
+
+	ID2D1PathGeometry* path_sad = nullptr;
+	ID2D1GeometrySink* path_sink_sad = nullptr;
+
+	ID2D1PathGeometry* path_nose = nullptr;
+	ID2D1GeometrySink* path_sink_nose = nullptr;
+
 	Path path_data;
 	Matrix3x2F transformation;
 	Matrix3x2F transformation_eye_1;
@@ -71,12 +80,15 @@ namespace {
 	FLOAT eye1centerY;
 	FLOAT eye2centerX;
 	FLOAT eye2centerY;
+
+	FLOAT mouseX = 0;
+	FLOAT mouseY = 0;
 }
 
 void InitDirect2D(HWND hwnd) {
 	// Utworzenie fabryki Direct2D
 	D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &d2d_factory);
-	if (d2d_factory == NULL) {
+	if (d2d_factory == nullptr) {
 		exit(2);
 	}
 	RecreateRenderTarget(hwnd);
@@ -114,7 +126,7 @@ void InitDirect2D(HWND hwnd) {
 		Point2F(1.2f, -0.8f),
 		Point2F(0.8f, -0.8f),
 		Point2F(0.0f, -0.8f)
-		});
+	});
 
 	d2d_factory->CreatePathGeometry(&path_1);
 	path_1->Open(&path_sink_1);
@@ -125,6 +137,30 @@ void InitDirect2D(HWND hwnd) {
 	}
 	path_sink_1->EndFigure(D2D1_FIGURE_END_OPEN);
 	path_sink_1->Close();
+	
+	d2d_factory->CreatePathGeometry(&path_nose);
+	path_nose->Open(&path_sink_nose);
+	path_sink_nose->BeginFigure(Point2F(-0.2f, 0.0f), D2D1_FIGURE_BEGIN_FILLED);
+	path_sink_nose->AddBezier(BezierSegment(
+		Point2F(0.0f, -0.2f), Point2F(0.0f, -0.2f), Point2F(0.2f, 0.0f)));
+	path_sink_nose->AddQuadraticBezier(QuadraticBezierSegment(
+		Point2F(0.0f, 0.1f), Point2F(-0.2f, 0.0f)));
+	path_sink_nose->EndFigure(D2D1_FIGURE_END_OPEN);
+	path_sink_nose->Close();
+
+	d2d_factory->CreatePathGeometry(&path_happy);
+	path_happy->Open(&path_sink_happy);
+	path_sink_happy->BeginFigure(Point2F(-0.4f, -0.4f), D2D1_FIGURE_BEGIN_HOLLOW);
+	path_sink_happy->AddQuadraticBezier(QuadraticBezierSegment(Point2F(0.0f, -0.7f), Point2F(0.4f, -0.4f)));
+	path_sink_happy->EndFigure(D2D1_FIGURE_END_OPEN);
+	path_sink_happy->Close();
+
+	d2d_factory->CreatePathGeometry(&path_sad);
+	path_sad->Open(&path_sink_sad);
+	path_sink_sad->BeginFigure(Point2F(-0.4f, -0.4f), D2D1_FIGURE_BEGIN_HOLLOW);
+	path_sink_sad->AddQuadraticBezier(QuadraticBezierSegment(Point2F(0.0f, -0.2f), Point2F(0.4f, -0.4f)));
+	path_sink_sad->EndFigure(D2D1_FIGURE_END_OPEN);
+	path_sink_sad->Close();
 }
 
 void RecreateRenderTarget(HWND hwnd) {
@@ -143,7 +179,7 @@ void RecreateRenderTarget(HWND hwnd) {
 	FLOAT height = rc.bottom - rc.top;
 	FLOAT width = rc.right - rc.left;
 
-	if (d2d_render_target == NULL) {
+	if (d2d_render_target == nullptr) {
 		exit(3);
 	}
 
@@ -198,7 +234,12 @@ void DestroyDirect2D() {
 	if (d2d_factory) d2d_factory->Release();
 }
 
-void OnPaint(HWND hwnd, FLOAT arg, LPARAM lparam) {
+void OnMouseMove(FLOAT moveX, LPARAM moveY) {
+	mouseX = moveX;
+	mouseY = moveY;
+}
+
+void OnPaint(HWND hwnd, FLOAT arg, INT lbutton) {
 	if (!d2d_render_target) RecreateRenderTarget(hwnd);
 
 	d2d_render_target->BeginDraw();
@@ -217,33 +258,44 @@ void OnPaint(HWND hwnd, FLOAT arg, LPARAM lparam) {
 	d2d_render_target->DrawEllipse(Ellipse(Point2F(0, 0), 0.25f, 0.25f), brush, 0.01f);
 
 	d2d_render_target->SetTransform(Matrix3x2F::Identity());
-	FLOAT x = GET_X_LPARAM(lparam);
-	FLOAT y = GET_Y_LPARAM(lparam);
 
-	FLOAT eyeX = eye1centerX, eyeY = eye1centerY;
+	FLOAT eyeX = mouseX, eyeY = mouseY;
 
-	FLOAT dist = sqrt((x - eye1centerX) * (x - eye1centerX) + (y - eye1centerY) * (y - eye1centerY));
+	FLOAT dist = sqrt((mouseX - eye1centerX) * (mouseX - eye1centerX) + (mouseY - eye1centerY) * (mouseY - eye1centerY));
 	if (dist > 50) {
-		eyeX = x * 50 / dist + eye1centerX * (1 - 50 / dist);
-		eyeY = y * 50 / dist + eye1centerY * (1 - 50 / dist);
+		eyeX = mouseX * 50 / dist + eye1centerX * (1 - 50 / dist);
+		eyeY = mouseY * 50 / dist + eye1centerY * (1 - 50 / dist);
 	}
 	
 	d2d_render_target->FillEllipse(Ellipse(Point2F(eyeX, eyeY), 25.0f, 25.0f), brush);
 
-	eyeX = eye2centerX;
-	eyeY = eye2centerY;
-	dist = sqrt((x - eye2centerX) * (x - eye2centerX) + (y - eye2centerY) * (y - eye2centerY));
+	eyeX = mouseX;
+	eyeY = mouseY;
+	dist = sqrt((mouseX - eye2centerX) * (mouseX - eye2centerX) + (mouseY - eye2centerY) * (mouseY - eye2centerY));
 	if (dist > 50) {
-		eyeX = x * 50 / dist + eye2centerX * (1 - 50 / dist);
-		eyeY = y * 50 / dist + eye2centerY * (1 - 50 / dist);
+		eyeX = mouseX * 50 / dist + eye2centerX * (1 - 50 / dist);
+		eyeY = mouseY * 50 / dist + eye2centerY * (1 - 50 / dist);
 	}
 
 	d2d_render_target->FillEllipse(Ellipse(Point2F(eyeX, eyeY), 25.0f, 25.0f), brush);
 
+	Matrix3x2F transformation_mouth;
+	transformation_mouth.SetProduct(Matrix3x2F::Rotation(22.5f * sin(arg * 2), Point2F(0, 0)), transformation);
+	
+	d2d_render_target->SetTransform(transformation_mouth);
+	d2d_render_target->FillGeometry(path_nose, brush_2);
+	d2d_render_target->DrawGeometry(path_nose, brush, 0.01f);
 
+	if (lbutton & (1 << 16)) {
+		d2d_render_target->DrawGeometry(path_happy, brush, 0.03f);
+	}
+	else {
+		d2d_render_target->DrawGeometry(path_sad, brush, 0.03f);
+	}
+	
 
 	if (d2d_render_target->EndDraw() == D2DERR_RECREATE_TARGET) {
 		DestroyRenderTarget();
-		OnPaint(hwnd, arg, lparam);
+		OnPaint(hwnd, arg, lbutton);
 	}
 }

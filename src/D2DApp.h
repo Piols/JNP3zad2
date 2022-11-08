@@ -7,4 +7,5 @@ void InitDirect2D(HWND hwnd);
 void RecreateRenderTarget(HWND hwnd);
 void DestroyRenderTarget();
 void DestroyDirect2D();
-void OnPaint(HWND hwnd, FLOAT arg, LPARAM lparam);
+void OnPaint(HWND hwnd, FLOAT arg, INT lbutton);
+void OnMouseMove(FLOAT moveX, LPARAM moveY);
